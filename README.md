@@ -20,6 +20,13 @@ restarts.
   it from the database immediately.
 - Books are stored in a real SQLite database (`books.db`) via a SQLAlchemy
   `Book` model, not an in-memory list, so they survive a server restart.
+- Rating input is validated: submitting a non-numeric value or one outside
+  0-5 re-shows the form with an error message instead of hitting the
+  database.
+- Submitting a duplicate book title shows a friendly error message instead
+  of crashing, the database's unique constraint on `title` is caught and
+  handled.
+- Books on the home page are sorted alphabetically by title.
 
 ## How to Run
 
@@ -42,25 +49,13 @@ restarts.
 
 ## Known Issues / Limitations
 
-- **No input validation.** The rating field is a plain text input; nothing
-  stops a non-numeric or out-of-range value from being submitted.
-- **Duplicate titles crash instead of failing gracefully.** The `Book.title`
-  column has a `unique=True` constraint, so submitting a title that already
-  exists raises an unhandled `IntegrityError` (a server error page) instead
-  of a friendly message.
-- **Book list isn't ordered.** The home page renders `Book.query.all()` with
-  no explicit ordering, so books show up in whatever order the database
-  returns them, not alphabetically by title.
+- **No delete confirmation.** The "Delete Book" link removes a book
+  immediately with no confirmation step and no way to undo it.
 
 ## Planned / Next Steps
 
-Manual verification that hasn't been recorded as done yet:
-
 - Explicitly verify persistence: add a few books through the site, restart
   the server, and confirm they're still there.
-- Test edit and delete through the actual website UI, and cross-check
-  `books.db` in DB Browser for SQLite to confirm the underlying data
-  actually changed.
 
 ## What I Learned
 
