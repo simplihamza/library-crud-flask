@@ -52,11 +52,6 @@ restarts.
 - **No delete confirmation.** The "Delete Book" link removes a book
   immediately with no confirmation step and no way to undo it.
 
-## Planned / Next Steps
-
-- Explicitly verify persistence: add a few books through the site, restart
-  the server, and confirm they're still there.
-
 ## What I Learned
 
 ### Flask basics
