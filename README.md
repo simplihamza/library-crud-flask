@@ -1,8 +1,9 @@
 # Library Project
 
-A small Flask web app for tracking books: view your library on the home page
-and add new books through a form. Books are stored in a SQLite database via
-SQLAlchemy, so they persist across server restarts.
+A small Flask web app for tracking books: view your library on the home page,
+add new books through a form, and edit or delete existing ones. Books are
+stored in a SQLite database via SQLAlchemy, so they persist across server
+restarts.
 
 ## Features
 
@@ -12,6 +13,11 @@ SQLAlchemy, so they persist across server restarts.
   added yet.
 - Add a new book through a form (`/add`), submitting title, author, and
   rating, then redirecting back to the home page.
+- Edit a book's rating via the "Edit Rating" link next to it (`/edit`),
+  shows the book's current title and rating and updates just the rating on
+  submit.
+- Delete a book via the "Delete Book" link next to it (`/delete`), removes
+  it from the database immediately.
 - Books are stored in a real SQLite database (`books.db`) via a SQLAlchemy
   `Book` model, not an in-memory list, so they survive a server restart.
 
@@ -36,8 +42,6 @@ SQLAlchemy, so they persist across server restarts.
 
 ## Known Issues / Limitations
 
-- **No edit or delete.** Once a book is added there is no way to change its
-  rating or remove it from the UI.
 - **No input validation.** The rating field is a plain text input; nothing
   stops a non-numeric or out-of-range value from being submitted.
 - **Duplicate titles crash instead of failing gracefully.** The `Book.title`
@@ -50,17 +54,13 @@ SQLAlchemy, so they persist across server restarts.
 
 ## Planned / Next Steps
 
-These are called out as TODOs directly in `main.py` and are not implemented
-yet:
+Manual verification that hasn't been recorded as done yet:
 
-- Add an `edit` route (GET/POST) to update a book's rating.
-- Add a `delete` route to remove a book.
-- Add "Edit Rating" and "Delete" links next to each book in `index.html`.
 - Explicitly verify persistence: add a few books through the site, restart
   the server, and confirm they're still there.
-- Once edit and delete exist, test them through the actual website UI and
-  cross-check `books.db` in DB Browser for SQLite to confirm the underlying
-  data actually changed.
+- Test edit and delete through the actual website UI, and cross-check
+  `books.db` in DB Browser for SQLite to confirm the underlying data
+  actually changed.
 
 ## What I Learned
 
@@ -116,3 +116,16 @@ yet:
   the table with the outdated `review` column. Fixed by deleting that
   stale `.db` file so `create_all()` rebuilt it fresh with the current
   schema.
+- **Template filename mismatch.** `render_template("edit_rating.html", ...)`
+  in the `edit` route raised `jinja2.exceptions.TemplateNotFound:
+  edit_rating.html`, the actual template file was named `edit.html`. Fixed
+  by matching the `render_template()` call to the real filename.
+- **Calling `request.form` instead of indexing it.**
+  `request.form("book_id")` raised `TypeError: 'ImmutableMultiDict' object
+  is not callable`, `request.form` is a dict-like object, not a function.
+  Fixed by switching to subscript access (`request.form["book_id"]`), the
+  same syntax already used correctly in the `add` route.
+- **Form field name mismatch.** After fixing that syntax, the same line
+  still failed with `werkzeug.exceptions.BadRequestKeyError: 'book_id'`,
+  because `edit.html`'s hidden input was named `id`, not `book_id`. Fixed
+  by reading `request.form["id"]` to match the actual form field name.

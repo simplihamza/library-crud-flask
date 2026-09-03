@@ -2,6 +2,10 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Float
+from sqlalchemy.exc import IntegrityError
+
+MIN_RATING = 0.0
+MAX_RATING = 5.0
 
 class Base(DeclarativeBase):
     pass
@@ -20,18 +24,44 @@ class Book(db.Model):
 with app.app_context():
     db.create_all()
 
+
+def parse_rating(raw_rating):
+    """Return raw_rating as a float within [MIN_RATING, MAX_RATING], or None if invalid."""
+    try:
+        rating = float(raw_rating)
+    except (TypeError, ValueError):
+        return None
+    if rating < MIN_RATING or rating > MAX_RATING:
+        return None
+    return rating
+
+
 @app.route('/')
 def home():
-    return render_template('index.html', books=Book.query.all())
+    return render_template('index.html', books=Book.query.order_by(Book.title).all())
 
 
 @app.route("/add", methods=["GET", "POST"])
 def add():
     if request.method == "POST":
+        rating = parse_rating(request.form["rating"])
+        if rating is None:
+            return render_template(
+                "add.html",
+                error=f"Rating must be a number between {MIN_RATING} and {MAX_RATING}.",
+            )
+
         with app.app_context():
-            new_book = Book(title=request.form["title"], author=request.form["author"], rating=request.form["rating"])
+            new_book = Book(title=request.form["title"], author=request.form["author"], rating=rating)
             db.session.add(new_book)
-            db.session.commit()
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                return render_template(
+                    "add.html",
+                    error=f"A book titled '{request.form['title']}' already exists.",
+                )
 
         return redirect(url_for("home"))
     return render_template("add.html")
@@ -41,26 +71,29 @@ def edit():
     if request.method == "POST":
         book_id = request.form["id"]
         book_to_update = db.get_or_404(Book, book_id)
-        book_to_update.rating = request.form["rating"]
+
+        rating = parse_rating(request.form["rating"])
+        if rating is None:
+            return render_template(
+                "edit.html",
+                book=book_to_update,
+                error=f"Rating must be a number between {MIN_RATING} and {MAX_RATING}.",
+            )
+
+        book_to_update.rating = rating
         db.session.commit()
         return redirect(url_for("home"))
     book_id = request.args.get("id")
     book_selected = db.get_or_404(Book, book_id)
     return render_template("edit.html", book=book_selected)
 
+@app.route("/delete", methods=["GET"])
+def delete():
+    book_id = request.args.get('id')
+    book_to_delete = db.get_or_404(Book, book_id)
+    db.session.delete(book_to_delete)
+    db.session.commit()
+    return redirect(url_for("home"))
+
 if __name__ == "__main__":
     app.run(debug=True)
-
-# TODO-19: Create a new 'delete' route that fetches a specific book by
-#  ID and deletes it, committing the change, then redirects home.
-
-# TODO-22: Add a few books through the website, confirm they appear.
-#  Stop the Flask server completely, then restart it. Reload the home
-#  page, if your books are now backed by a real database instead of the
-#  old in-memory list, they should still be there, this is the entire
-#  point of this project, confirm it explicitly rather than assuming it
-#  works.
-
-# TODO-23: Test edit and delete through the actual website UI, and
-#  cross-check the books.db file directly in DB Browser to confirm the
-#  underlying data actually changed.
