@@ -58,29 +58,37 @@ class Book(db.Model):
     author: Mapped[str] = mapped_column(String(250), nullable=False)
     rating: Mapped[float] = mapped_column(Float, nullable=False)
 
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
+#
+# with app.app_context():
+#     new_book = Book(id=1, title="Harry Potter", author="J. K. Rowling", rating=4.7)
+#     db.session.add(new_book)
+#     db.session.commit()
 
-with app.app_context():
-    new_book = Book(id=1, title="Harry Potter", author="J. K. Rowling", rating=4.7)
-    db.session.add(new_book)
-    db.session.commit()
+# with app.app_context():
+#     result = db.session.execute(db.select(Book).order_by(Book.title))
+#     all_books = result.scalars()
+#     print(all_books)
 
-# TODO-11: Once your table exists, practice each CRUD operation
-#  separately, inside an app context each time:
-#  - CREATE: instantiate a new Book object and add/commit it.
-#  - READ ALL: build a select query ordered by title, execute it, and
-#    extract the actual objects (not raw rows) from the result.
-#  - READ ONE: build a select query filtered by a specific field (e.g.
-#    title equals a specific value), and extract a single result rather
-#    than a list of results.
-#  - UPDATE: fetch a specific record (try both by matching a field value,
-#    and separately by primary key), change one of its attributes, and
-#    commit.
-#  - DELETE: fetch a specific record by primary key and delete it,
-#    committing afterward.
+# with app.app_context():
+#     book = db.session.execute(db.select(Book).where(Book.title == "Harry Potter")).scalar()
 
-# TODO-12: Look specifically at the shortcut method Flask-SQLAlchemy
-#  provides for fetching-by-primary-key-or-returning-a-404-automatically,
-#  compare it to the manual "select where id equals" approach, and note
-#  when you'd prefer one over the other.
+# with app.app_context():
+#     book_to_update = db.session.execute(db.select(Book).where(Book.title == "Harry Potter")).scalar()
+#     book_to_update.title = "Lord of the Rings"
+#     db.session.commit()
+
+# book_id = 1
+# with app.app_context():
+#     book_to_update = db.session.execute(db.select(Book).where(Book.id == book_id)).scalar()
+#     # or book_to_update = db.get_or_404(Book, book_id)
+#     book_to_update.title = "Harry Potter"
+#     db.session.commit()
+
+# book_id = 1
+# with app.app_context():
+#     book_to_delete = db.session.execute(db.select(Book).where(Book.id == book_id)).scalar()
+#     # or book_to_delete = db.get_or_404(Book, book_id)
+#     db.session.delete(book_to_delete)
+#     db.session.commit()

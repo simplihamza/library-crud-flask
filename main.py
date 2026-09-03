@@ -1,49 +1,43 @@
 from flask import Flask, render_template, request, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Integer, String, Float
+
+class Base(DeclarativeBase):
+    pass
 
 app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///books.db"
+db = SQLAlchemy(model_class=Base)
+db.init_app(app)
 
-all_books = []
+class Book(db.Model):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
+    author: Mapped[str] = mapped_column(String(250), nullable=False)
+    rating: Mapped[float] = mapped_column(Float, nullable=False)
+
+with app.app_context():
+    db.create_all()
 
 @app.route('/')
 def home():
-    return render_template('index.html', books=all_books)
+    return render_template('index.html', books=Book.query.all())
 
 
 @app.route("/add", methods=["GET", "POST"])
 def add():
     if request.method == "POST":
-        new_book = {
-            "title": request.form["title"],
-            "author": request.form["author"],
-            "rating": request.form["rating"]
-        }
-        all_books.append(new_book)
+        with app.app_context():
+            new_book = Book(title=request.form["title"], author=request.form["author"], rating=request.form["rating"])
+            db.session.add(new_book)
+            db.session.commit()
+
         return redirect(url_for("home"))
     return render_template("add.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-# TODO-13: Replace the in-memory 'all_books = []' list entirely with a
-#  real SQLAlchemy setup: DeclarativeBase subclass, database URI pointing
-#  to books.db, SQLAlchemy extension created and initialized with your
-#  app, following the exact same pattern you just practiced.
-
-# TODO-14: Define your Book model with the four fields (id, title,
-#  author, rating), matching the constraints from your sqlite3/SQLAlchemy
-#  practice (unique title, not-null fields, correct types).
-
-# TODO-15: Create the table schema on startup, inside an app context.
-
-# TODO-16: Update the 'home' route to query all books from the database
-#  (ordered by title) instead of reading from the old list, and pass the
-#  results into the template exactly as before.
-
-# TODO-17: Update the 'add' route so that submitting the form creates a
-#  new Book database record (instead of appending to a list), commits
-#  it, and redirects to home on success, same behavior as before, just
-#  backed by real persistence now.
 
 # TODO-18: Create a new 'edit' route (GET and POST) that fetches a
 #  specific book by ID, shows its current title/rating on GET, and

@@ -1,8 +1,8 @@
 # Library Project
 
 A small Flask web app for tracking books: view your library on the home page
-and add new books through a form. Built while practicing Flask routing and
-laying the groundwork for a real SQLite-backed persistence layer.
+and add new books through a form. Books are stored in a SQLite database via
+SQLAlchemy, so they persist across server restarts.
 
 ## Features
 
@@ -12,6 +12,8 @@ laying the groundwork for a real SQLite-backed persistence layer.
   added yet.
 - Add a new book through a form (`/add`), submitting title, author, and
   rating, then redirecting back to the home page.
+- Books are stored in a real SQLite database (`books.db`) via a SQLAlchemy
+  `Book` model, not an in-memory list, so they survive a server restart.
 
 ## How to Run
 
@@ -34,32 +36,31 @@ laying the groundwork for a real SQLite-backed persistence layer.
 
 ## Known Issues / Limitations
 
-- **No persistence.** Books are stored in a plain Python list
-  (`all_books = []`) in server memory. Restarting the Flask server wipes the
-  entire library, there is no database wired up yet.
 - **No edit or delete.** Once a book is added there is no way to change its
   rating or remove it from the UI.
 - **No input validation.** The rating field is a plain text input; nothing
   stops a non-numeric or out-of-range value from being submitted.
-- **No duplicate checking.** The same title can be added more than once.
+- **Duplicate titles crash instead of failing gracefully.** The `Book.title`
+  column has a `unique=True` constraint, so submitting a title that already
+  exists raises an unhandled `IntegrityError` (a server error page) instead
+  of a friendly message.
+- **Book list isn't ordered.** The home page renders `Book.query.all()` with
+  no explicit ordering, so books show up in whatever order the database
+  returns them, not alphabetically by title.
 
 ## Planned / Next Steps
 
-These are called out as TODOs directly in `main.py` and `playground.py` and
-are not implemented yet:
+These are called out as TODOs directly in `main.py` and are not implemented
+yet:
 
-- Replace the in-memory list with a real SQLAlchemy setup (`DeclarativeBase`,
-  a `books.db` SQLite database, the Flask-SQLAlchemy extension).
-- Define a `Book` model (id, title, author, rating) with proper constraints
-  (unique title, not-null fields, correct types).
-- Create the table schema on startup and update the `home` and `add` routes
-  to read from and write to the database instead of the list.
 - Add an `edit` route (GET/POST) to update a book's rating.
 - Add a `delete` route to remove a book.
 - Add "Edit Rating" and "Delete" links next to each book in `index.html`.
-- Once implemented, explicitly verify persistence: add books, restart the
-  server, confirm they're still there; cross-check `books.db` in DB Browser
-  for SQLite after edits and deletes.
+- Explicitly verify persistence: add a few books through the site, restart
+  the server, and confirm they're still there.
+- Once edit and delete exist, test them through the actual website UI and
+  cross-check `books.db` in DB Browser for SQLite to confirm the underlying
+  data actually changed.
 
 ## What I Learned
 
