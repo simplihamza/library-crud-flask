@@ -1,40 +1,18 @@
 from sqlalchemy import create_engine, text, MetaData, Table, Column, Integer, String
 from sqlalchemy.orm import Session
+import sqlite3
 
 # ==================== sqlite3 practice ====================
 
-# TODO-1: In a throwaway script (or reuse a section of playground.py),
-#  import the built-in sqlite3 module and create a connection to a new
-#  database file, this alone will create the .db file on disk when run.
-
-# TODO-2: Create a cursor from that connection, this is what actually
-#  executes commands against the database.
-
-# TODO-3: Use the cursor to execute a raw SQL CREATE TABLE command,
-#  defining a books table with four fields: id (integer primary key),
-#  title (a string with a max length, required, unique), author (a
-#  string with a max length, required), and rating (a float, required).
-
-# TODO-4: Download DB Browser for SQLite, and open your new .db file with
-#  it, so you can visually confirm the table was created correctly.
-
-# TODO-5: Use the cursor to execute a raw SQL INSERT command adding one
-#  book (e.g. Harry Potter) into the table, then commit the change so
-#  it's actually saved to disk. Comment out or remove the CREATE TABLE
-#  line before rerunning, otherwise you'll get an error since the table
-#  already exists.
-
-# TODO-6: Reopen the database in DB Browser (close it first if it was
-#  already open, or you'll get a "database locked" warning) and confirm
-#  your new row appears.
-
-# TODO-7: Reflect on why this raw SQL approach is fragile, notice how
-#  easy it would be to make an invisible typo (e.g. VALUE instead of
-#  VALUES) that silently breaks things. This motivates the next section.
+db = sqlite3.connect("books-collection.db")
+cursor = db.cursor()
+# cursor.execute("CREATE TABLE books (id INTEGER PRIMARY KEY, title varchar(250) NOT NULL UNIQUE, author varchar(250) NOT NULL, rating FLOAT NOT NULL)")
+cursor.execute("INSERT INTO books VALUES(1, 'Harry Potter', 'J. K. Rowling', '9.3')")
+db.commit()
 
 # ==================== SQLAlchemy (raw Table/Column) practice ====================
 
-engine = create_engine('sqlite:///testdatabase.db', echo=True)
+# engine = create_engine('sqlite:///testdatabase.db', echo=True)
 
 # connection = engine.connect()
 # connection.execute(text("CREATE TABLE IF NOT EXISTS users(name TEXT, age INTEGER)"))
@@ -52,12 +30,12 @@ engine = create_engine('sqlite:///testdatabase.db', echo=True)
 #
 # session.commit()
 
-meta = MetaData()
-users = Table('users', meta, Column('id', Integer, primary_key=True),
-              Column('name', String, nullable=False)
-              , Column('age', Integer))
-
-meta.create_all(engine)
+# meta = MetaData()
+# users = Table('users', meta, Column('id', Integer, primary_key=True),
+#               Column('name', String, nullable=False)
+#               , Column('age', Integer))
+#
+# meta.create_all(engine)
 
 # ==================== SQLAlchemy (Flask-SQLAlchemy ORM) practice ====================
 

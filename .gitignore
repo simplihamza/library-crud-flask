@@ -9,8 +9,7 @@ __pycache__/
 .idea/
 
 # Database files (generated, not source)
-books.db
-testdatabase.db
+*.db
 
 # OS junk
 .DS_Store
