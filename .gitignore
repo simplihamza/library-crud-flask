@@ -1,0 +1,16 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# IDE
+.idea/
+
+# Database files (generated, not source)
+books.db
+testdatabase.db
+
+# OS junk
+.DS_Store
