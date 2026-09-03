@@ -63,16 +63,55 @@ are not implemented yet:
 
 ## What I Learned
 
+### Flask basics
+
 - How to structure a basic Flask app: a `home` route that renders a template
   with data, and an `add` route that handles both displaying a form (GET)
   and processing its submission (POST) in the same view function, using
   `request.form` to read submitted fields and `redirect(url_for(...))` to
   send the user back to the home page afterward.
-- Started comparing two ways of talking to a database in `playground.py`:
-  raw `sqlite3` (connection, cursor, hand-written SQL strings) versus
-  SQLAlchemy's Core layer (`engine`, `MetaData`, `Table`, `Column`) for
-  defining and creating tables in code instead of raw SQL strings.
 - Understood *why* the current library disappears on every restart: the
   book list lives only in a Python variable in server memory, not on disk.
   That's the concrete motivation for the SQLAlchemy/SQLite migration listed
   above.
+
+### Database practice (`playground.py`)
+
+- Compared two ways of talking to a database: raw `sqlite3` (connection,
+  cursor, hand-written SQL strings) versus SQLAlchemy's Core layer
+  (`engine`, `MetaData`, `Table`, `Column`) for defining and creating
+  tables in code instead of raw SQL strings.
+- Built a working Flask-SQLAlchemy ORM setup: a `DeclarativeBase` subclass,
+  a `Book` model with typed columns (`Mapped[int]`, `Mapped[str]`,
+  `Mapped[float]`) and real constraints (unique title, not-null fields),
+  `db.create_all()` to build the schema, and a first `CREATE` (insert +
+  commit) through the ORM.
+- Learned that Flask-SQLAlchemy writes its SQLite file into an app-relative
+  `instance/` folder by default (e.g. `instance/new-books-collection.db`),
+  not the project root, useful to know when hunting for where the data
+  actually landed.
+
+### Errors hit and fixed
+
+- **Python 3.14 vs. an outdated SQLAlchemy pin.** `SQLAlchemy==2.0.25`
+  crashed on import under Python 3.14 with `AssertionError: ... directly
+  inherits TypingOnly but has additional attributes`. Python 3.13+ added
+  new automatic class attributes (`__firstlineno__`, `__static_attributes__`)
+  that this older SQLAlchemy release's internal typing check didn't know how
+  to ignore. Fixed by bumping `SQLAlchemy` to `2.0.52` (and `Flask` to
+  `3.1.3` while at it) in `requirements.txt`, a dependency-version fix, no
+  application code changed.
+- **Column name mismatch.** The `Book` model defined a `review` column, but
+  the code constructing a book passed `rating=...`. SQLAlchemy's generated
+  `__init__` only accepts keyword arguments that match actual column names,
+  so it raised `TypeError: 'rating' is an invalid keyword argument for
+  Book`. Fixed by renaming the column to `rating` to match how it was
+  being used.
+- **Stale schema after the rename.** After fixing the column name,
+  inserting a book still failed with `sqlite3.OperationalError: table book
+  has no column named rating`. `db.create_all()` only creates tables that
+  don't exist yet, it never alters an existing table's columns, and the
+  old `instance/new-books-collection.db` from before the rename still had
+  the table with the outdated `review` column. Fixed by deleting that
+  stale `.db` file so `create_all()` rebuilt it fresh with the current
+  schema.
